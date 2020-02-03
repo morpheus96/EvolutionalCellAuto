@@ -2,11 +2,13 @@
 #include <cstdlib>
 #include <time.h>
 #include <vector>
+#include <map>
+#include <list>
 #include <algorithm>
 #include "Food.h"
 
 class Player : public Coordinates {
-private:
+public:
 ///vars
 	int number;
 	int energy=5;
@@ -21,10 +23,11 @@ private:
 	int speed;
 	int size;
 	int sense;
-
-	std::pair<Coordinates, int> detected_environ;
-public:
-	int x, y;
+	int rtype = 2;
+	int range;
+	bool seen = false;
+	std::pair<Food*, int>* target = new std::pair<Food*, int>{new Food(), 100000};
+	std::vector<std::pair<Food*, int>*> detected_environ;
 ///getters
 public:
 	int GetSpeed() { return this->speed; }
@@ -33,44 +36,111 @@ public:
 	bool GetStatus() { return this->status; }
 ///construtors
 public:
-	Player(const int &N) : number(N), speed(basic_speed), sense(basic_sense), size(basic_size) {}
-	Player(const int &N, const int &Sp, const int &Se, const int &Si) : number(N), speed(Sp), sense(Se), size(Si) {}
-	Player(const int &N, const Player &pl) : number(N), speed(pl.speed), sense(pl.sense), size(pl.size) { }
+	Player() : speed(basic_speed), sense(basic_sense), size(basic_size) { status = true; };
+	Player(int X, int Y, int Z) : Coordinates(X, Y, Z), speed(basic_speed), sense(basic_sense), size(basic_size) { status = true; }
+	Player(const int &Sp, const int &Se, const int &Si, int X, int Y, int Z) : Coordinates(X, Y, Z), speed(Sp), sense(Se), size(Si) { status = true; }
+	Player(const Player &pl, int X, int Y, int Z) : Coordinates(X, Y, Z), speed(pl.speed), sense(pl.sense), size(pl.size) { status = true; }
 	~Player() {}
 ///functions
 public:
-	void Eat(const int& fcal) { energy+=fcal; }
+	int rType() { return 2; }
+	void RefreshRange() { range = speed; }
+	void Eat(const int& fcal) { energy+=fcal;  }
 	void GrowOld() { age++; }
 	void Die() { status = false; }
 	void Starve() { if (!(energy > 0)) Die(); }
-	bool EnergyBilanse() { return energy > speed*size * 10; }
-	Player Multiply(const int &N) { 
-		if ((rand() % 100) + 1 < basic_mutation_chance*energy) return Player(N, this->speed + rand()%2, this->sense + rand() % 2, this->size + rand() % 2);
-		else return Player(N, this->speed, this->sense, this->size);
+	bool EnergyBilanse() { return energy > speed*size * speed/2 + sense/2; }
+	Player* Multiply(int X, int Y, int Z) {
+		if ((rand() % 100) + 1 < basic_mutation_chance*energy) return new Player(this->speed + basic_speed*rand()%2, this->sense + basic_sense*rand() % 2, this->size + basic_size*rand() % 2, X, Y, Z);
+		else return new Player(this->speed, this->sense, this->size, X, Y, Z);
 	}	
-	void MoveRandom(const int &size_x, const int &size_y){//map limits needs to be included
+	void MoveRandom(const int &size_x, const int &size_y, int Speed){
 		if (rand() % 2) {
-			if (rand()%2) x += speed;
-			else x -= speed;
+			if (rand()%2) x += Speed;
+			else x -= Speed;
 			if (x < 0) x = 0;
 			if (x > size_x) x = size_x;
 		}
 		else {
-			if (rand() % 2) y += speed;
-			else y -= speed;
+			if (rand() % 2) y += Speed;
+			else y -= Speed;
 			if (y < 0) y = 0;
 			if (y > size_y) y = size_y;
 		}
 	}
-	void MoveToTarget(const Food& detected_food_list){
-		
+	void MoveToTarget(const int &size_x, const int &size_y){
+		for (int i = 0; i < detected_environ.size(); i++) {
+			if (detected_environ[i]->second < target->second) target = detected_environ[i];
+		}
+		if (target->second < range) {
+			if (target->second < speed) {
+				x = target->first->x;
+				y = target->first->y;
+				range -= target->second;
+				Eat(target->first->cal);
+				target->first->status = false;
+			}
+			else
+			{
+				for (int i = 0; i < speed; i++) {
+					if (x < target->first->x) {
+						x++;
+						continue;
+					}
+					if (x > target->first->x) {
+						x--;
+						continue;
+					}
+					if (y < target->first->y) {
+						x++;
+						continue;
+					}
+					if (y > target->first->y) {
+						y--;
+						continue;
+					}
+					MoveRandom(size_x, size_y, speed - i);
+					std::cout << "niemozliwe";
+					break;
+				}
+			}
+			
+		}
+		else
+		{
+			for (int i = 0; i < range; i++) {
+				if (x < target->first->x) {
+					x++;
+					continue;
+				}
+				if (x > target->first->x) {
+					x--;
+					continue;
+				}
+				if (y < target->first->y) {
+					x++;
+					continue;
+				}
+				if (y > target->first->y) {
+					y--;
+					continue;
+				}
+				MoveRandom(size_x, size_y, range - i);
+				std::cout << "niemozliwe";
+				break;
+			}
+		}
 	}
-	void RecognizeEnvironment(const int*** map, int size_x, int size_y, int size_z) {
-		for (int i = x - sense; i < x + sense; i++) {
-			for (int j = y - sense; j < y + sense; j++) {
-				for (int k = 0; k < size % 8; k++) {
-					if (x >= 0 && x < size_x && y >= 0 && y < size_y && k >= 0 && k < size_z) {
-
+	void RecognizeEnvironment(std::vector<Coordinates*> map_map, int size_x, int size_y, int size_z) {
+		detected_environ.clear();
+		seen = false;
+		for (int i = 0; i < size%8; i++) {
+			if (i < size_z) {
+				for each (Food* cor in map_map)
+				{
+					if (cor->z == i && cor->rType() == 1 && sense >= this->distance(cor)) {
+						detected_environ.push_back(new std::pair<Food*, int>{ cor, this->distance(cor) });
+						seen = true;
 					}
 				}
 			}
