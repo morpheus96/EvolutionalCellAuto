@@ -36,7 +36,7 @@ public:
 	bool GetStatus() { return this->status; }
 ///construtors
 public:
-	Player() : speed(basic_speed), sense(basic_sense), size(basic_size) { status = true; };
+	Player() : Coordinates(), speed(basic_speed), sense(basic_sense), size(basic_size) { status = true; };
 	Player(int X, int Y, int Z) : Coordinates(X, Y, Z), speed(basic_speed), sense(basic_sense), size(basic_size) { status = true; }
 	Player(const int &Sp, const int &Se, const int &Si, int X, int Y, int Z) : Coordinates(X, Y, Z), speed(Sp), sense(Se), size(Si) { status = true; }
 	Player(const Player &pl, int X, int Y, int Z) : Coordinates(X, Y, Z), speed(pl.speed), sense(pl.sense), size(pl.size) { status = true; }
@@ -67,8 +67,10 @@ public:
 			if (y < 0) y = 0;
 			if (y > size_y) y = size_y;
 		}
+		range = 0;
 	}
 	void MoveToTarget(const int &size_x, const int &size_y){
+		target = new std::pair<Food*, int>{ new Food(), 100000 };
 		for (int i = 0; i < detected_environ.size(); i++) {
 			if (detected_environ[i]->second < target->second) target = detected_environ[i];
 		}
@@ -85,18 +87,22 @@ public:
 				for (int i = 0; i < speed; i++) {
 					if (x < target->first->x) {
 						x++;
+						range--;
 						continue;
 					}
 					if (x > target->first->x) {
 						x--;
+						range--;
 						continue;
 					}
 					if (y < target->first->y) {
-						x++;
+						y++;
+						range--;
 						continue;
 					}
 					if (y > target->first->y) {
 						y--;
+						range--;
 						continue;
 					}
 					MoveRandom(size_x, size_y, speed - i);
@@ -111,18 +117,22 @@ public:
 			for (int i = 0; i < range; i++) {
 				if (x < target->first->x) {
 					x++;
+					range--;
 					continue;
 				}
 				if (x > target->first->x) {
 					x--;
+					range--;
 					continue;
 				}
 				if (y < target->first->y) {
 					x++;
+					range--;
 					continue;
 				}
 				if (y > target->first->y) {
 					y--;
+					range--;
 					continue;
 				}
 				MoveRandom(size_x, size_y, range - i);
@@ -151,4 +161,4 @@ public:
 int Player::basic_mutation_chance = 10;
 int Player::basic_speed = 1;
 int Player::basic_size = 1;
-int Player::basic_sense = 1;
+int Player::basic_sense = 3;

@@ -8,7 +8,7 @@
 int main()
 {
 	srand(time(0));
-	Map* test = new Map(30, 30, 1, 10, 10);
+	Map* test = new Map(10, 10, 1, 1, 20);
 	test->PlayGame();
 	system("pause");
     return 0;

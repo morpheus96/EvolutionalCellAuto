@@ -34,8 +34,16 @@ public:
 	}
 	~Map() {}
 	void GC() {
+		//for each(Player* pl in map_map);
 		for (int i = 0; i < map_map.size(); ++i) {
-			if (!map_map[i]->status) map_map.erase(map_map.begin() + i);
+			if (!(((Food* )map_map[i])->status)) {
+				map_map.erase(map_map.begin() + i);
+				cout << "plant eaten" << endl;
+			}
+			if (!(((Player*)map_map[i])->status)) {
+				map_map.erase(map_map.begin() + i);
+				cout << "player is dead" << endl;
+			}
 		}
 	}
 	void ProvideFood() {
@@ -96,19 +104,20 @@ public:
 		ProvidePlayers();
 		for (int t = 0; t < 30; t++) {//turns
 			ProvideFood();
-			for (int ti = 0; t < 10; ti++) {//turn iteration
+			for (int ti = 0; ti < 10; ti++) {//turn iteration
 				for each (Player* pl in map_map)
 				{
 					if (pl->rType() == 2) {
 						pl->RefreshRange();
 						while(pl->range>0){
+							system("cls");
+							DisplayMap("cos", t, ti);
 							pl->RecognizeEnvironment(map_map, size_x, size_y, size_z);
 							if (pl->seen) pl->MoveToTarget(size_x, size_y);
 							else pl->MoveRandom(size_x, size_y, pl->speed);
 							GC();
 							RefreshMap();
-							system("cls");
-							DisplayMap("cos", t, ti);
+							
 							
 						}
 					}
@@ -125,7 +134,7 @@ public:
 		}
 	}
 	void DisplayMap(string name, int turn, int move) {
-		
+		cout << name << " : " << turn << " : " << move<< endl;
 		for (int i = 0; i < size_y; i++) {
 			for (int j = 0; j < size_z; j++) {
 				for (int k = 0; k< size_x; k++) {
